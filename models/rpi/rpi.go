@@ -1,8 +1,8 @@
 package rpi
 
 /*
-#cgo LDFLAGS: -lwiringPi
-#include <wiringPiSPI.h>
+#cgo LDFLAGS: -lwiringx
+#include <wiringx.h>
 #include "glue.h"
 */
 import "C"
@@ -87,7 +87,7 @@ func SPITransfer(buf []byte) error {
 	//clog.DebugX("(%d) SPI SEND %d: %s (%s)", counter, lbuf, hex.EncodeToString(buf), spi_op_names[buf[0]])
 
 	SPIMutex.Lock()
-	r := C.wiringPiSPIDataRW(SpiChannel, &block[0], C.int(len(buf)))
+	r := C.wiringXSPIDataRW(SpiChannel, &block[0], C.int(len(buf)))
 	SPIMutex.Unlock()
 
 	if r < 0 {
@@ -300,7 +300,7 @@ func DriverInitialize(reset bool, speed uint) (*device.Information, error) {
 
 	C.setup_wiring_pi()
 
-	r := C.wiringPiSPISetup(SpiChannel, C.int(speed))
+	r := C.wiringXSPISetup(SpiChannel, C.int(speed))
 	if r < 0 {
 		return nil, fmt.Errorf("Could not open SPI device")
 	}

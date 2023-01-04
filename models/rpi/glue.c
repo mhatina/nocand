@@ -1,5 +1,5 @@
 #include "glue.h"
-#include <wiringPi.h>
+#include <wiringx.h>
 #include "_cgo_export.h"
 
 // CAN_RX is on BCM GPIO 25 (aka WiringPin 6)
@@ -28,15 +28,33 @@ int digitalReadCE0(void)
 
 void setup_wiring_pi(void)
 {
-    wiringPiSetupGpio();
-    pinMode(CAN_RX_PIN, INPUT);
+    wiringXSetup();
+    pinMode(CAN_RX_PIN, PINMODE_INPUT | PINMODE_INTERRUPT);
     pinMode(CAN_TX_PIN, INPUT);
     pinMode(MCU_RESET_PIN, INPUT); // avoid leaving the MCU stuck at reset
-    pullUpDnControl(CAN_TX_PIN, PUD_DOWN);
+    // pullUpDnControl(CAN_TX_PIN, PUD_DOWN);
 }
 
+void *interruptHandler() {
+	for (;;)
+    {
+        if (waitForInterrupt(CAN_RX_PIN, -1) > 0)
+        {
+            CanRxInterrupt();
+        }
+    }
+
+    return NULL;
+}
+
+static pthread_mutex_t pinMutex;
 void setup_interrupts()
 {
-    wiringPiISR(CAN_RX_PIN, INT_EDGE_FALLING, CanRxInterrupt);
+    pthread_t threadId;
+
+    pthread_mutex_lock (&pinMutex) ;
+    pthread_create (&threadId, NULL, interruptHandler, NULL);
+    pthread_mutex_unlock (&pinMutex) ;    
+    wiringXISR(CAN_RX_PIN, INT_EDGE_FALLING);
     //wiringPiISR(CAN_TX_PIN, INT_EDGE_FALLING, CanTxInterrupt);
 }
